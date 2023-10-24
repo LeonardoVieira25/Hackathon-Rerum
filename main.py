@@ -1,11 +1,14 @@
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+
 DATA_SETS_FOLDER = './dataSets/'
 
 def plot_df_column(df: pd.DataFrame, column_name: str):
-    y_values = df.sort_values(column_name)[column_name]
+    # y_values = df.sort_values(column_name)[column_name]
+    y_values = df[column_name]
     x_values = range(len(y_values))
     plt.figure(figsize=(10, 6))  
     plt.plot(x_values, y_values)
@@ -37,36 +40,14 @@ def add_media_n_column(df, target_column_name, n_size):
             new_column.append(media_n(df[target_column_name][i:i+n_size]))
     df["media_n_"+str(n_size)] = new_column
 
+def import_operation(operations):
+    mod = __import__("operations")
+    for operation in operations[1:]:
+        mod = getattr(mod, operation)
+    return mod
 
 
-OPTIONS = {
-    "add_n_colunas": {
-        "n": 0
-    },
-    "sum_colunas": {
-        "col1": "",
-        "col2": "",
-    }
-}
-
-class AddMediaN:
-    require = []
-    adds = []
-
-    def __init__(self, column, n_size):
-        self.column = column
-        self.n_size = n_size
-        self.require = [column]
-        self.adds = ["media_n_"+str(n_size)]
-
-    def action(self, df):
-        new_column = []
-        for i in range(0,len(df)):
-            if(len(df[self.column]) >= self.n_size):
-                new_column.append(media_n(df[self.column][i:i+self.n_size]))
-        df["media_n_"+str(self.n_size)] = new_column
-
-class SomaColunas:
+class MeanColumns:
     require = []
     adds = []
 
@@ -74,13 +55,101 @@ class SomaColunas:
         self.column1 = column1
         self.column2 = column2
         self.require = [column1, column2]
-        self.adds = ["sum_"+self.column1+"_"+self.column2]
+        self.adds = ["mean(" + self.column1 + "," + self.column2 + ")"]
+    def action(self, df):
+        df["mean(" + self.column1 + "," + self.column2 + ")"] = (df[self.column1] + df[self.column2]) / 2
+class MaxValue:
+    require = []
+    adds = []
+
+    def __init__(self, column):
+        self.column = column
+        self.require = [column]
+        self.adds = ["max_" + column]
 
     def action(self, df):
-        df["sum_"+self.column1+"_"+self.column2] = df[self.column1] + df[self.column2]
-        
+        df["max_" + self.column] = df[self.column].max()
+class MinValue:
+    require = []
+    adds = []
 
+    def __init__(self, column):
+        self.column = column
+        self.require = [column]
+        self.adds = ["min_" + column]
 
+    def action(self, df):
+        df["min_" + self.column] = df[self.column].min()
+
+class SquareColumn:
+    require = []
+    adds = []
+
+    def __init__(self, column):
+        self.column = column
+        self.require = [column]
+        self.adds = ["square_" + column]
+
+    def action(self, df):
+        df["square_" + self.column] = df[self.column] ** 2
+
+class LogTransform:
+    require = []
+    adds = []
+
+    def __init__(self, column):
+        self.column = column
+        self.require = [column]
+        self.adds = ["log_" + column]
+
+    def action(self, df):
+        df["log_" + self.column] = df[self.column].apply(lambda x: math.log(x) if x > 0 else 0)
+
+class NormalizeColumn:
+    require = []
+    adds = []
+
+    def __init__(self, column):
+        self.column = column
+        self.require = [column]
+        self.adds = ["normalized_" + column]
+
+    def action(self, df):
+        df["normalized_" + self.column] = (df[self.column] - df[self.column].mean()) / df[self.column].std()
+
+class FilterOutliers:
+    require = []
+    adds = []
+
+    def __init__(self, column):
+        self.column = column
+        self.require = [column]
+        self.adds = ["filtered_" + column]
+
+    def action(self, df):
+        # Calcular a média e o desvio padrão da coluna
+        mean = df[self.column].mean()
+        std_dev = df[self.column].std()
+
+        # Definir limites para os outliers com base no desvio padrão
+        lower_bound = mean - 2 * std_dev  # 2 desvios padrão abaixo da média
+        upper_bound = mean + 2 * std_dev  # 2 desvios padrão acima da média
+
+        # Filtrar os valores que estão fora dos limites
+        df["filtered_" + self.column] = df[self.column].apply(lambda x: x if lower_bound <= x <= upper_bound else mean)
+
+class MovingAverage:
+    require = []
+    adds = []
+
+    def __init__(self, column, window_size):
+        self.column = column
+        self.window_size = window_size
+        self.require = [column]
+        self.adds = ["moving_avg_" + column]
+
+    def action(self, df):
+        df["moving_avg_" + self.column] = df[self.column].rolling(window=self.window_size).mean()
 
 
 def contains_all_elements(arr1, arr2):
@@ -112,30 +181,41 @@ def main():
     # print(type(df[column_name].values[0]) == np.int64 or type(df[column_name].values[0]) == np.float64) #! verifica se é um número
 
     receita = [
-        AddMediaN(column_name, 10),
-        SomaColunas("media_n_"+str(10),column_name)
+        # AddMediaN(column_name, 10),
+        SomaColunas("media_n_"+str(10),column_name),
+        # MeanColumns(column_name,"in_apple_playlists"),
+        # NormalizeColumn(column_name),
+        # MovingAverage(column_name, 10),
+        # FilterOutliers("normalized_"+column_name)
+        # LogTransform(column_name),
+        # MovingAverage("log_"+column_name, 10),
         ]
 
     # print("verifica_receita(df.columns.values, receita)")
     # print(verifica_receita(df.columns.values, receita))
     receita_state = verifica_receita(df.columns.values, receita)
-    if verifica_receita(df.columns.values, receita) == True:
+    if receita_state == True:
         executa_receita(receita, df)
     else:
         print("Erro com o passo "+str(receita_state))
-    # print_options(dfb.columns.values)
-    one_value_plot(df)
 
-    # add_media_n_column(df, column_name, 10)
-    # plot_df_column(df, column_name)
-    
-
-    
-    
+    while True:
+        one_value_plot(df)
 
 
+def load_operations():
+    operations = {}
+    import importlib
+    operations_list = [f[:-3] for f in os.listdir("operations") if f.endswith(".py")]
+    for operation in operations_list:
+        module_name = f"operations.{operation}"
+        module = importlib.import_module(module_name)
+        class_obj = getattr(module, operation)
+        operations[operation] = class_obj    
+    return operations
 
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+    #load operations
+    # main()
