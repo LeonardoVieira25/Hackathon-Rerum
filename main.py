@@ -94,6 +94,40 @@ def main():
     print("==< colunas disponíveis >==")
     print_options(df.columns.values[1:])
     column_name = df.columns.values[int(input("Selecione a coluna: "))]
+
+    # adicionando escolha do intervalo
+    meses_em_portugues = {
+    'jan': 'Jan',
+    'fev': 'Feb',
+    'mar': 'Mar',
+    'abr': 'Apr',
+    'mai': 'May',
+    'jun': 'Jun',
+    'jul': 'Jul',
+    'ago': 'Aug',
+    'set': 'Sep',
+    'out': 'Oct',
+    'nov': 'Nov',
+    'dez': 'Dec'
+}
+    df['Data'] = df['Data'].str.replace('/', '-', regex=False)  # Substitua "/" por "-"
+    df['Data'] = df['Data'].str[:3].map(meses_em_portugues) + df['Data'].str[3:]  # Mapeie os nomes dos meses
+    df['Data'] = pd.to_datetime(df['Data'], format='%b-%y')  # Converta as datas para datetime
+
+
+    data_inicial_str = input("Escolha uma data de inicio (formato Oct-01):")
+    data_final_str = input("Escolha uma data de fim (formato Oct-01):")
+
+    # Converta as strings de entrada para o formato correto antes de usar pd.to_datetime
+    data_inicial = pd.to_datetime(data_inicial_str, format='%b-%y')
+    data_final = pd.to_datetime(data_final_str, format='%b-%y')
+
+    # Use a função .loc para selecionar as linhas dentro do intervalo.
+    linhas_no_intervalo = df.loc[(df['Data'] >= data_inicial) & (df['Data'] <= data_final)]
+        
+    print(linhas_no_intervalo)
+
+    
     
     operations = load_operations()
     receita = [
