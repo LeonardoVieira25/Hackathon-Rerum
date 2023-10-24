@@ -18,7 +18,9 @@ def list_csv_files_in_current_folder():
 
 def print_options(options):
     for i, file in enumerate(options):
-        print("[ " + str(i) + " ] " + file)
+        print("[ " + str(i) + " ] " + file + "\n")
+
+
 
 
 def one_value_plot(df: pd.DataFrame):
@@ -104,11 +106,12 @@ def main():
     print("==< arquivos disponíveis >==")
     print_options(csv_files)
     file_index = int(input("Selecione o arquivo: "))
-    df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding='latin-1', low_memory=False)
+    print(DATA_SETS_FOLDER + csv_files[file_index])
+    df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding='latin-1', low_memory=False, delimiter=";")
 
     print("==< colunas disponíveis >==")
-    print_options(df.columns.values)
-    column_name = df.columns.values[int(input("Selecione a coluna: "))]
+    print_options(df.columns.values[1:])
+    column_name = df.columns.values[int(input("Selecione a coluna: "))+1]
     # print(type(df[column_name].values[0]) == np.int64 or type(df[column_name].values[0]) == np.float64) #! verifica se é um número
 
     receita = [
