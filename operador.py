@@ -5,6 +5,7 @@ import pandas as pd
 
 
 DATA_SETS_FOLDER = './dataSets/'
+OUT_DTA_FOLDER = './result_files/'
 
 def plot_df_column(df: pd.DataFrame, column_name: str):
     # y_values = df.sort_values(column_name)[column_name]
@@ -45,10 +46,9 @@ def contains_all_elements(arr1, arr2):
 def executa_receita(receita, df):
     for passo in receita: #! efetua todas as actions da receita
         passo.action(df)
+        print(df.head())
 
 def verifica_receita(df_columns: np.ndarray, receita: list):
-    print("receita na função")
-    print(receita)
     campos = df_columns
     for passo in receita: #! verifica se todos os passos possuem os requirements 
         if contains_all_elements(campos, passo.require):
@@ -108,19 +108,101 @@ def seleciona_novo_passo(operations, receita, df):
         return newOperation
     else:
         return False
+    
+def listar_receita(receita):
+    if(len(receita) == 0):
+        print("A receita atual esta vazia!")
+    for passo in receita:
+        print(passo.__class__.__name__+": ", end=" ")
+        variables = [i for i in dir(passo) if not callable(i)]
+        # variables.remove(["__class__", "__delattr__", "__dict__", "__dir__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__getstate__", "__gt__", "__hash__", "__init__", "__init_subclass__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "action", "adds", "params"])
+        for attr in ["__class__", "__delattr__", "__dict__", "__dir__", "__doc__", "__eq__", "__format__", "__ge__", "__getattribute__", "__getstate__", "__gt__", "__hash__", "__init__", "__init_subclass__", "__le__", "__lt__", "__module__", "__ne__", "__new__", "__reduce__", "__reduce_ex__", "__repr__", "__setattr__", "__sizeof__", "__str__", "__subclasshook__", "__weakref__", "action", "adds", "params"]:
+            if attr in variables:
+                variables.remove(attr)
+        for param in variables:
+            print(param+": "+str(passo.__dict__[param]), end=", ")
+        print("")
+
 
 def main():
     csv_files = list_csv_files_in_current_folder()
     print("==< arquivos disponíveis >==")
-    print_options(csv_files)
+    print_options(["Sair"]+csv_files)
     file_index = int(input("Selecione o arquivo: "))
+    if file_index == 0:
+        return
+    else:
+        file_index -= 1
     print(DATA_SETS_FOLDER + csv_files[file_index])
-    delimiter, first_column = detect_csv_delimiter(csv_files[file_index])
+    delimiter = detect_csv_delimiter(csv_files[file_index])
     df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding='latin-1', low_memory=False, delimiter=delimiter)
     
-    # print("==< colunas disponíveis >==")
-    # print_options(df.columns.values[1:])
-    # column_name = df.columns.values[int(input("Selecione a coluna: "))]
+    operations = load_operations()
+    receita = []
+    u_input = 1
+    while u_input > 0:
+        print("==< opções >==")
+        print_options([
+            "Sair",
+            "Visualizar gráfico",
+            "Adicionar Operações",
+            "Salvar tabela",
+            "Listar receita"
+        ])
+        u_input = int(input())
+        match u_input:
+            case 0: 
+                continue
+            case 1:
+                receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
+                if receita_state == True:
+                    df_baked = df.copy()
+                    executa_receita(receita, df_baked)
+                    one_value_plot(df_baked)
+                else:
+                    print("Erro com o passo "+str(receita_state))
+                continue
+            case 2:
+                novo_passo = seleciona_novo_passo(operations, receita, df)
+                if novo_passo != False:
+                    receita.append(novo_passo)
+                else:
+                    print("Operação incompatível com a receita atual! Verifique seus parâmetros.")
+            case 3:
+                out_file_name = str(input("Nome do arquivo: "))
+                receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
+                if receita_state == True:
+                    df_baked = df.copy()
+                    executa_receita(receita, df_baked)
+                    df_baked.to_csv(OUT_DTA_FOLDER + out_file_name + ".csv")
+                else:
+                    print("Erro com o passo "+str(receita_state))
+                continue
+            case 4:
+                listar_receita(receita)
+
+
+
+
+def init_operator(filename):
+    delimiter, first_column = detect_csv_delimiter(filename)
+    df = pd.read_csv(DATA_SETS_FOLDER + filename, encoding='latin-1', low_memory=False, delimiter=delimiter)
+    global_df = df
+def get_operations_names():
+    return global_operations
+
+
+global_operations = 0
+global_df = 0
+if __name__ == "__main__":
+    # load operations
+    main()
+
+
+
+# print("==< colunas disponíveis >==")
+# print_options(df.columns.values[1:])
+# column_name = df.columns.values[int(input("Selecione a coluna: "))]
     
 # # adicionando escolha do intervalo
 #     meses_em_portugues = {
@@ -153,46 +235,3 @@ def main():
 #     linhas_no_intervalo = df.loc[(df['Data'] >= data_inicial) & (df['Data'] <= data_final)]
         
 #     print(linhas_no_intervalo)
-    operations = load_operations()
-    global_operations = operations
-    receita = []
-    u_input = 1
-    while u_input > 0:
-        print("==< opções >==")
-        print_options([
-            "Sair",
-            "Adicionar Operações"
-        ])
-        u_input = int(input())
-        match u_input:
-            case 0: 
-                continue
-            case 1:
-                novo_passo = seleciona_novo_passo(operations, receita, df)
-                if novo_passo != False:
-                    receita.append(novo_passo)
-                else:
-                    print("Operação incompatível com a receita atual! Verifique seus parâmetros.")
-
-    receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
-    if receita_state == True:
-        executa_receita(receita, df)
-    else:
-        print("Erro com o passo "+str(receita_state))
-
-    while True:
-        one_value_plot(df)
-
-def init_operator(filename):
-    delimiter, first_column = detect_csv_delimiter(filename)
-    df = pd.read_csv(DATA_SETS_FOLDER + filename, encoding='latin-1', low_memory=False, delimiter=delimiter)
-    global_df = df
-def get_operations_names():
-    return global_operations
-
-
-global_operations = 0
-global_df = 0
-if __name__ == "__main__":
-    # load operations
-    main()
