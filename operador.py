@@ -13,6 +13,7 @@ def plot_df_column(df: pd.DataFrame, column_name: str):
     x_values = range(len(y_values))
     plt.figure(figsize=(10, 6))  
     plt.plot(x_values, y_values)
+    plt.ylabel(column_name)
     plt.show()
 
 import os
@@ -25,10 +26,37 @@ def print_options(options):
         print("[ " + str(i) + " ] " + file)
 
 def one_value_plot(df: pd.DataFrame):
+    print(df.head())
     print("==< colunas disponíveis >==")
     print_options(df.columns.values)
     column_name = df.columns.values[int(input("Selecione a coluna: "))]
+    order_by = df.columns.values[int(input("Escolha a coluna para ordenação: (-1 para não ordenar)"))]
+    if order_by != "-1":
+        df = df.sort_values(by=order_by)
     plot_df_column(df,column_name)
+
+def two_values_plot(df: pd.DataFrame):
+    print(df.head())
+    print("==< colunas disponíveis >==")
+    print_options(df.columns.values)
+    column_name_x = df.columns.values[int(input("Selecione a coluna do eixo x: "))]
+    column_name_y = df.columns.values[int(input("Selecione a coluna do eixo y: "))]
+    if column_name_x == column_name_y:
+        return
+    order_by = df.columns.values[int(input("Escolha a coluna para ordenação: (-1 para não ordenar)"))]
+    if order_by != "-1":
+        df = df.sort_values(by=order_by)
+    y_values = df[column_name_y]
+    x_values = df[column_name_x]
+    print(df.head())
+    plt.figure(figsize=(10, 6))
+
+    plt.scatter(x_values, y_values)
+    # plt.plot(x_values, y_values)
+    
+    plt.xlabel(column_name_x)
+    plt.ylabel(column_name_y)
+    plt.show()
 
 
 def import_operation(operations):
@@ -54,15 +82,39 @@ def verifica_receita(df_columns: np.ndarray, receita: list):
         if contains_all_elements(campos, passo.require):
             campos = np.append(campos, passo.adds)
         else:
-            return type(passo)
+            return type(passo), None
     return True, campos
 
-def detect_csv_delimiter(filename):
+def get_svg_encoding(file_name): #! não esta reconhecendo adequadamente 
+    try:
+        with open(DATA_SETS_FOLDER+file_name, 'rb') as file:
+            first_4_bytes = file.read(4)
+            if first_4_bytes == b'\x3C\x3F\x78\x6D':
+                return "UTF-8"
+            elif first_4_bytes == b'\x00\x00\xFE\xFF':
+                return "UTF-32-BE"
+            elif first_4_bytes == b'\xFF\xFE\x00\x00':
+                return "UTF-32-LE"
+            elif first_4_bytes == b'\xFE\xFF':
+                return "UTF-16-BE"
+            elif first_4_bytes == b'\xFF\xFE':
+                return "UTF-16-LE"
+            else:
+                return "Unknown"
+    except FileNotFoundError:
+        return "File not found"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def detect_csv_delimiter(filename, encoding):
     delimiters = [',', ';', '\t', '|']  # Lista de delimitadores a serem testados
 
     for delimiter in delimiters:
         try:
-            df = pd.read_csv("./dataSets/"+filename, sep=delimiter, nrows=1)
+            print("tentou "+delimiter)
+            # df = pd.read_csv("./dataSets/"+filename, sep=delimiter, nrows=1)
+            df = pd.read_csv(DATA_SETS_FOLDER+filename, sep=delimiter, nrows=2, encoding=encoding)
+            print(df.head())
             if len(df.columns) > 0:
                 return delimiter 
         except:
@@ -126,6 +178,7 @@ def listar_receita(receita):
 
 def main():
     csv_files = list_csv_files_in_current_folder()
+    updated_receita = False
     print("==< arquivos disponíveis >==")
     print_options(["Sair"]+csv_files)
     file_index = int(input("Selecione o arquivo: "))
@@ -134,8 +187,13 @@ def main():
     else:
         file_index -= 1
     print(DATA_SETS_FOLDER + csv_files[file_index])
-    delimiter = detect_csv_delimiter(csv_files[file_index])
-    df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding='latin-1', low_memory=False, delimiter=delimiter)
+    encoding_detected = "latin-1"
+    # encoding_detected = get_svg_encoding(csv_files[file_index])
+    delimiter_detected = detect_csv_delimiter(csv_files[file_index], encoding_detected)
+    print(delimiter_detected)
+    print(encoding_detected)
+    # df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index])
+    df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding=encoding_detected, delimiter=delimiter_detected)
     
     operations = load_operations()
     receita = []
@@ -144,10 +202,11 @@ def main():
         print("==< opções >==")
         print_options([
             "Sair",
-            "Visualizar gráfico",
+            "Visualizar gráfico com um único parâmetro",
+            "Visualizar gráfico com dois parâmetros",
             "Adicionar Operações",
             "Salvar tabela",
-            "Listar receita"
+            "Listar receita",
         ])
         u_input = int(input())
         match u_input:
@@ -157,43 +216,58 @@ def main():
                 receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
                 if receita_state == True:
                     df_baked = df.copy()
-                    executa_receita(receita, df_baked)
+                    if(updated_receita):
+                        executa_receita(receita, df_baked)
+                        updated_receita = False
                     one_value_plot(df_baked)
                 else:
                     print("Erro com o passo "+str(receita_state))
                 continue
             case 2:
+                receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
+                if receita_state == True:
+                    df_baked = df.copy()
+                    executa_receita(receita, df_baked)
+                    two_values_plot(df_baked)
+                else:
+                    print("Erro com o passo "+str(receita_state))
+                continue
+            case 3:
                 novo_passo = seleciona_novo_passo(operations, receita, df)
                 if novo_passo != False:
                     receita.append(novo_passo)
+                    updated_receita = True
                 else:
                     print("Operação incompatível com a receita atual! Verifique seus parâmetros.")
-            case 3:
+            case 4:
                 out_file_name = str(input("Nome do arquivo: "))
                 receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
                 if receita_state == True:
                     df_baked = df.copy()
                     executa_receita(receita, df_baked)
+                    order_by = df_baked.columns.values[int(input("Escolha a coluna para ordenação: (-1 para não ordenar)"))]
+                    if order_by != "-1":
+                        df_baked = df_baked.sort_values(by=order_by)
                     df_baked.to_csv(OUT_DTA_FOLDER + out_file_name + ".csv")
                 else:
                     print("Erro com o passo "+str(receita_state))
                 continue
-            case 4:
+            case 5:
                 listar_receita(receita)
 
 
 
 
-def init_operator(filename):
-    delimiter, first_column = detect_csv_delimiter(filename)
-    df = pd.read_csv(DATA_SETS_FOLDER + filename, encoding='latin-1', low_memory=False, delimiter=delimiter)
-    global_df = df
-def get_operations_names():
-    return global_operations
+# def init_operator(filename):
+#     delimiter, first_column = detect_csv_delimiter(filename)
+#     df = pd.read_csv(DATA_SETS_FOLDER + filename, encoding='latin-1', low_memory=False, delimiter=delimiter)
+#     global_df = df
+# def get_operations_names():
+#     return global_operations
+# global_operations = 0
+# global_df = 0
 
 
-global_operations = 0
-global_df = 0
 if __name__ == "__main__":
     # load operations
     main()
