@@ -1,4 +1,7 @@
 class MinValue:
+    params = [
+        "column",
+    ]
     require = []
     adds = []
 

@@ -1,4 +1,7 @@
 class SquareColumn:
+    params = [
+        "column"
+    ]
     require = []
     adds = []
 

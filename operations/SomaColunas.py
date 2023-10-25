@@ -1,4 +1,8 @@
 class SomaColunas:
+    params = [
+        "column1",
+        "column2",
+    ]
     require = []
     adds = []
 

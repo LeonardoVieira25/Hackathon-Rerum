@@ -1,4 +1,7 @@
 class MaxValue:
+    params = [
+        "column1"
+    ]
     require = []
     adds = []
 

@@ -1,4 +1,7 @@
 class FilterOutliers:
+    params = [
+        "column"
+    ]
     require = []
     adds = []
 

@@ -1,4 +1,7 @@
 class NormalizeColumn:
+    params = [
+        "column"
+    ]
     require = []
     adds = []
 

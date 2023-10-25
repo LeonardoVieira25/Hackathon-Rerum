@@ -1,4 +1,10 @@
+import math
+
+
 class LogTransform:
+    params = [
+        "column",
+    ]
     require = []
     adds = []
 
@@ -9,3 +15,4 @@ class LogTransform:
 
     def action(self, df):
         df["log_" + self.column] = df[self.column].apply(lambda x: math.log(x) if x > 0 else 0)
+        
