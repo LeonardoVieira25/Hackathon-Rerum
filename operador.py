@@ -29,8 +29,6 @@ def one_value_plot(df: pd.DataFrame):
     column_name = df.columns.values[int(input("Selecione a coluna: "))]
     plot_df_column(df,column_name)
 
-def media_n(series: np.ndarray):
-    return np.mean(series)
 
 def import_operation(operations):
     mod = __import__("operations")
@@ -112,7 +110,6 @@ def seleciona_novo_passo(operations, receita, df):
         return False
 
 def main():
-
     csv_files = list_csv_files_in_current_folder()
     print("==< arquivos disponíveis >==")
     print_options(csv_files)
@@ -121,9 +118,9 @@ def main():
     delimiter, first_column = detect_csv_delimiter(csv_files[file_index])
     df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding='latin-1', low_memory=False, delimiter=delimiter)
     
-    print("==< colunas disponíveis >==")
-    print_options(df.columns.values[1:])
-    column_name = df.columns.values[int(input("Selecione a coluna: "))]
+    # print("==< colunas disponíveis >==")
+    # print_options(df.columns.values[1:])
+    # column_name = df.columns.values[int(input("Selecione a coluna: "))]
     
 # # adicionando escolha do intervalo
 #     meses_em_portugues = {
@@ -157,6 +154,7 @@ def main():
         
 #     print(linhas_no_intervalo)
     operations = load_operations()
+    global_operations = operations
     receita = []
     u_input = 1
     while u_input > 0:
@@ -172,7 +170,6 @@ def main():
             case 1:
                 novo_passo = seleciona_novo_passo(operations, receita, df)
                 if novo_passo != False:
-                    # print("ok")
                     receita.append(novo_passo)
                 else:
                     print("Operação incompatível com a receita atual! Verifique seus parâmetros.")
@@ -186,11 +183,16 @@ def main():
     while True:
         one_value_plot(df)
 
+def init_operator(filename):
+    delimiter, first_column = detect_csv_delimiter(filename)
+    df = pd.read_csv(DATA_SETS_FOLDER + filename, encoding='latin-1', low_memory=False, delimiter=delimiter)
+    global_df = df
+def get_operations_names():
+    return global_operations
 
 
-
-
-
+global_operations = 0
+global_df = 0
 if __name__ == "__main__":
     # load operations
     main()

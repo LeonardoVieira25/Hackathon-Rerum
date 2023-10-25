@@ -1,6 +1,51 @@
 import tkinter as tk
 from tkinter import filedialog, ttk
 
+import os
+import shutil
+# from operador import get_operations_names
+# from operador import init_operator
+
+
+def mover_arquivo(arquivo_origem):
+    diretorio_destino = os.path.join(os.getcwd(), "dataSets")
+    # Verifique se a subpasta existe, e se não, crie-a
+    if not os.path.exists(diretorio_destino):
+        os.makedirs(diretorio_destino)
+
+    # Determine o nome do arquivo de destino
+    nome_arquivo_destino = os.path.join(diretorio_destino, os.path.basename(arquivo_origem))
+
+    # Mova o arquivo para a subpasta
+    shutil.move(arquivo_origem, nome_arquivo_destino)
+
+# def escolher_arquivo():
+#     arquivo_selecionado = filedialog.askopenfilename()
+#     if arquivo_selecionado:
+#         # Chame sua função e passe o caminho do arquivo como argumento
+#         print(arquivo_selecionado)
+
+# def import_file(janela, select_file):
+#     def busca_arquivo():
+#         arquivo_selecionado = filedialog.askopenfilename()
+#         mover_arquivo(arquivo_selecionado)
+#         select_file()
+#         fileEntry.delete(0, tk.END)
+#         fileEntry.insert(0, arquivo_selecionado)
+
+#     tk.Label(janela, text = "Escolha seu arquivo .csv:").grid(column=0, row=0)
+#     fileEntry = tk.Entry(  janela, width=40)
+#     fileEntry.grid(column=1, row=0)
+
+#     fileButton = tk.Button(  janela, text="Buscar", command=busca_arquivo)
+#     fileButton.grid(column=2, row=0)
+
+# def select_file(janela, arquivos_disponiveis):
+#     botoes = []
+#     for i, texto in enumerate(arquivos_disponiveis):
+#         botao = tk.Button(janela, text=texto, command=lambda t=texto: acao_do_botao(t))
+#         botao.grid(row=i, column=0, padx=10, pady=5)
+#         botoes.append(botao)
 
 class Interface:
     def __init__(self, janela):
@@ -34,6 +79,7 @@ class Interface:
 
         tk.Label(self.janela, text="Escolha a operação a ser realizada:").grid(column=0, row=1)
         self.dados_combobox = ["Média", "Opção 2", "Opção 3", "Opção 4"]
+        # self.dados_combobox = [] + [get_operations_names()]
         self.combobox = ttk.Combobox(self.janela, values=self.dados_combobox)
         self.combobox.grid(column=1, row=1)
         self.combobox.set(self.dados_combobox[0])
@@ -56,6 +102,7 @@ class Interface:
     def acao_botao(self):
         # Abre uma janela de seleção de arquivo
         arquivo_selecionado = filedialog.askopenfilename()
+        mover_arquivo(arquivo_selecionado)
         self.fileEntry.delete(0, tk.END)
         self.fileEntry.insert(0, arquivo_selecionado)
 
@@ -88,11 +135,15 @@ class Interface:
     #def generate(self):
 
 
-# Cria uma instância da janela principal
-janela_principal = tk.Tk()
+def main():
+    # Cria uma instância da janela principal
+    janela_principal = tk.Tk()
 
-# Cria uma instância da classe TelaInterclasse
-tela = Interface(janela_principal)
+    # Cria uma instância da classe TelaInterclasse
+    tela = Interface(janela_principal)
 
-# Inicia o loop principal
-janela_principal.mainloop()
+    # Inicia o loop principal
+    janela_principal.mainloop()
+
+if __name__ == "__main__":
+    main()
