@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import os
+import importlib
 
 
 DATA_SETS_FOLDER = './dataSets/'
@@ -37,13 +38,21 @@ def one_value_plot(df: pd.DataFrame):
         df = df.sort_values(by=order_by)
     
     # Configurar o estilo do seaborn
-    sns.set(style="whitegrid")
+    # sns.set(style="whitegrid")
+    style_options = ["darkgrid" , "whitegrid" , "dark" , "white" , "ticks"]
+    print_options(style_options)
+    style_option_selected = style_options[int(input("Selecione um estilo: "))]
+    sns.set(style=style_option_selected)
     
     # Gráfico de barras
     plt.figure(figsize=(12, 6))
-    sns.barplot(data=df, x=column_name, y=df.index, orient='h')
-    plt.xlabel(column_name)
-    plt.ylabel("Índice")
+
+    plot_df = df[column_name].reset_index(drop=True)
+    sns.lineplot(data=plot_df)
+    # sns.barplot(data=df, orient='h')
+    # sns.plo(data=df, x=column_name, y=df.index, orient='h')
+    plt.ylabel(column_name)
+    # plt.ylabel("Índice")
     plt.title(f'Gráfico de {column_name}')
     plt.show()
 
@@ -144,7 +153,6 @@ def load_operations():
     # representando uma operação. A classe deve conter os atributos: params, require, adds e o método action.
     # operations é um dicionário que mapeia o nome da operação para a classe da operação
     operations = {}
-    import importlib
     operations_list = [f[:-3] for f in os.listdir("operations") if f.endswith(".py")]
     for operation in operations_list:
         module_name = f"operations.{operation}"
@@ -214,10 +222,7 @@ def main():
 
     print(DATA_SETS_FOLDER + csv_files[file_index])
     encoding_detected = "latin-1"
-    # encoding_detected = get_svg_encoding(csv_files[file_index])
     delimiter_detected = detect_csv_delimiter(csv_files[file_index], encoding_detected)
-    print(delimiter_detected)
-    print(encoding_detected)
 
     df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding=encoding_detected, delimiter=delimiter_detected)
     
@@ -362,57 +367,5 @@ def main():
                         continue
 
 
-
-
-
-# def init_operator(filename):
-#     delimiter, first_column = detect_csv_delimiter(filename)
-#     df = pd.read_csv(DATA_SETS_FOLDER + filename, encoding='latin-1', low_memory=False, delimiter=delimiter)
-#     global_df = df
-# def get_operations_names():
-#     return global_operations
-# global_operations = 0
-# global_df = 0
-
-
 if __name__ == "__main__":
-    # load operations
     main()
-
-
-
-# print("==< colunas disponíveis >==")
-# print_options(df.columns.values[1:])
-# column_name = df.columns.values[int(input("Selecione a coluna: "))]
-    
-# # adicionando escolha do intervalo
-#     meses_em_portugues = {
-#     'jan': 'Jan',
-#     'fev': 'Feb',
-#     'mar': 'Mar',
-#     'abr': 'Apr',
-#     'mai': 'May',
-#     'jun': 'Jun',
-#     'jul': 'Jul',
-#     'ago': 'Aug',
-#     'set': 'Sep',
-#     'out': 'Oct',
-#     'nov': 'Nov',
-#     'dez': 'Dec'
-# }
-#     df['Data'] = df['Data'].str.replace('/', '-', regex=False)  # Substitua "/" por "-"
-#     df['Data'] = df['Data'].str[:3].map(meses_em_portugues) + df['Data'].str[3:]  # Mapeie os nomes dos meses
-#     df['Data'] = pd.to_datetime(df['Data'], format='%b-%y')  # Converta as datas para datetime
-
-
-#     data_inicial_str = input("Escolha uma data de inicio (formato Oct-01):")
-#     data_final_str = input("Escolha uma data de fim (formato Oct-01):")
-
-#     # Converta as strings de entrada para o formato correto antes de usar pd.to_datetime
-#     data_inicial = pd.to_datetime(data_inicial_str, format='%b-%y')
-#     data_final = pd.to_datetime(data_final_str, format='%b-%y')
-
-#     # Use a função .loc para selecionar as linhas dentro do intervalo.
-#     linhas_no_intervalo = df.loc[(df['Data'] >= data_inicial) & (df['Data'] <= data_final)]
-        
-#     print(linhas_no_intervalo)
