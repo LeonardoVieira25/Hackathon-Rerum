@@ -2,6 +2,8 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+import os
 
 
 DATA_SETS_FOLDER = './dataSets/'
@@ -16,7 +18,6 @@ def plot_df_column(df: pd.DataFrame, column_name: str):
     plt.ylabel(column_name)
     plt.show()
 
-import os
 def list_csv_files_in_current_folder():
     subfolder_files = [f for f in os.listdir(DATA_SETS_FOLDER) if f.endswith('.csv')]
     return subfolder_files
@@ -27,13 +28,24 @@ def print_options(options):
 
 def one_value_plot(df: pd.DataFrame):
     print(df.head())
-    print("==< colunas disponíveis >==")
+    print("==< Colunas disponíveis >==")
     print_options(df.columns.values)
     column_name = df.columns.values[int(input("Selecione a coluna: "))]
     order_by = df.columns.values[int(input("Escolha a coluna para ordenação: (-1 para não ordenar)"))]
+    
     if order_by != "-1":
         df = df.sort_values(by=order_by)
-    plot_df_column(df,column_name)
+    
+    # Configurar o estilo do seaborn
+    sns.set(style="whitegrid")
+    
+    # Gráfico de barras
+    plt.figure(figsize=(12, 6))
+    sns.barplot(data=df, x=column_name, y=df.index, orient='h')
+    plt.xlabel(column_name)
+    plt.ylabel("Índice")
+    plt.title(f'Gráfico de {column_name}')
+    plt.show()
 
 def two_values_plot(df: pd.DataFrame):
     print(df.head())
@@ -49,13 +61,16 @@ def two_values_plot(df: pd.DataFrame):
     y_values = df[column_name_y]
     x_values = df[column_name_x]
     print(df.head())
-    plt.figure(figsize=(10, 6))
-
-    plt.scatter(x_values, y_values)
-    # plt.plot(x_values, y_values)
     
+    sns.set()  # Configuração padrão do Seaborn
+
+    plt.figure(figsize=(10, 6))
+    # Substitui plt.scatter por sns.scatterplot para melhor apresentação
+    sns.scatterplot(x=x_values, y=y_values, palette="viridis", alpha=0.7)
+
     plt.xlabel(column_name_x)
     plt.ylabel(column_name_y)
+    plt.title(f"Gráfico de Dispersão: {column_name_x} vs {column_name_y}")
     plt.show()
 
 
@@ -111,20 +126,23 @@ def detect_csv_delimiter(filename, encoding):
 
     for delimiter in delimiters:
         try:
-            print("tentou "+delimiter)
-            # df = pd.read_csv("./dataSets/"+filename, sep=delimiter, nrows=1)
             df = pd.read_csv(DATA_SETS_FOLDER+filename, sep=delimiter, nrows=2, encoding=encoding)
-            print(df.head())
-            if len(df.columns) > 0:
-                return delimiter 
-        except:
+            if len(df.columns) > 1:
+                print(df.head())
+                return delimiter
+        except pd.errors.EmptyDataError:
             pass
-    return False  # Se nenhum delimitador for detectado
+        except pd.errors.ParserError:
+            pass
+    return False
 
 def is_numeric(value):
     return isinstance(value, (int, float, complex))
 
 def load_operations():
+    # Os operadores (funções de ação sobre o df), são carregados aqui. cada arquivo contém uma classe com o mesmo nome do arquivo
+    # representando uma operação. A classe deve conter os atributos: params, require, adds e o método action.
+    # operations é um dicionário que mapeia o nome da operação para a classe da operação
     operations = {}
     import importlib
     operations_list = [f[:-3] for f in os.listdir("operations") if f.endswith(".py")]
@@ -139,9 +157,11 @@ def seleciona_novo_passo(operations, receita, df):
     keys = list(operations.keys())
     print("Selecione uma operação")
     print_options(keys)
+
     op = int(input())
+
     params = operations[keys[op]].params
-    receita_valida, colunas_validas = verifica_receita(df.columns.values, receita)
+    receita_valida, colunas_validas = verifica_receita(df.columns.values, receita) # verifica se é possível adicionar a operação na receita atual
     valores_lidos = {}
     for param in params:
         valor = 0
@@ -176,30 +196,37 @@ def listar_receita(receita):
         print("")
 
 
+
+
+
 def main():
     csv_files = list_csv_files_in_current_folder()
     updated_receita = False
+
     print("==< arquivos disponíveis >==")
     print_options(["Sair"]+csv_files)
-    file_index = int(input("Selecione o arquivo: "))
+
+    file_index = int(input("\nSelecione o arquivo: "))
     if file_index == 0:
         return
     else:
         file_index -= 1
+
     print(DATA_SETS_FOLDER + csv_files[file_index])
     encoding_detected = "latin-1"
     # encoding_detected = get_svg_encoding(csv_files[file_index])
     delimiter_detected = detect_csv_delimiter(csv_files[file_index], encoding_detected)
     print(delimiter_detected)
     print(encoding_detected)
-    # df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index])
+
     df = pd.read_csv(DATA_SETS_FOLDER + csv_files[file_index], encoding=encoding_detected, delimiter=delimiter_detected)
     
-    operations = load_operations()
+    operations = load_operations() # dicionário com as operações(funções) disponíveis
     receita = []
     u_input = 1
+
     while u_input > 0:
-        print("==< opções >==")
+        print("\n==< opções >==")
         print_options([
             "Sair",
             "Visualizar gráfico com um único parâmetro",
@@ -207,12 +234,18 @@ def main():
             "Adicionar Operações",
             "Salvar tabela",
             "Listar receita",
+            "Analise de período"
         ])
+
         u_input = int(input())
+
+        list_subset = []
+
         match u_input:
-            case 0: 
+            case 0: # Sair
                 continue
-            case 1:
+
+            case 1: # Visualizar gráfico com um único parâmetro
                 receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
                 if receita_state == True:
                     df_baked = df.copy()
@@ -223,7 +256,8 @@ def main():
                 else:
                     print("Erro com o passo "+str(receita_state))
                 continue
-            case 2:
+
+            case 2: # Visualizar gráfico com dois parâmetros
                 receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
                 if receita_state == True:
                     df_baked = df.copy()
@@ -232,14 +266,16 @@ def main():
                 else:
                     print("Erro com o passo "+str(receita_state))
                 continue
-            case 3:
+
+            case 3: # Adicionar Operações
                 novo_passo = seleciona_novo_passo(operations, receita, df)
                 if novo_passo != False:
                     receita.append(novo_passo)
                     updated_receita = True
                 else:
                     print("Operação incompatível com a receita atual! Verifique seus parâmetros.")
-            case 4:
+
+            case 4: # Salvar tabela
                 out_file_name = str(input("Nome do arquivo: "))
                 receita_state, colunas_validas  = verifica_receita(df.columns.values, receita)
                 if receita_state == True:
@@ -252,8 +288,79 @@ def main():
                 else:
                     print("Erro com o passo "+str(receita_state))
                 continue
-            case 5:
+
+            case 5: # Listar receita
                 listar_receita(receita)
+
+            case 6: # Analise de período
+                    
+                # adicionando escolha do intervalo
+                meses_em_portugues = {
+                'jan': 'Jan',
+                'fev': 'Feb',
+                'mar': 'Mar',
+                'abr': 'Apr',
+                'mai': 'May',
+                'jun': 'Jun',
+                'jul': 'Jul',
+                'ago': 'Aug',
+                'set': 'Sep',
+                'out': 'Oct',
+                'nov': 'Nov',
+                'dez': 'Dec'
+                }
+                df['Data'] = df['Data'].str.replace('/', '-', regex=False)  # Substitua "/" por "-"
+                df['Data'] = df['Data'].str[:3].map(meses_em_portugues) + df['Data'].str[3:]  # Mapeie os nomes dos meses
+                df['Data'] = pd.to_datetime(df['Data'], format='%b-%y')  # Converta as datas para datetime
+
+
+                print("Início do período: " + str(df['Data'].min().strftime('%b-%Y')))
+                print("Fim do período: " + str(df['Data'].max().strftime('%b-%Y')))
+
+
+                data_inicial_str = input("Escolha uma data de inicio (formato Oct-01):")
+                data_final_str = input("Escolha uma data de fim (formato Oct-01):")
+
+                data_inicial = pd.to_datetime(data_inicial_str, format='%b-%y')
+                data_final = pd.to_datetime(data_final_str, format='%b-%y')
+
+                subdf = df.loc[(df['Data'] >= data_inicial) & (df['Data'] <= data_final)]
+
+                print("\n==< opções >==")
+                print_options([
+                    "Sair",
+                    "Visualizar gráfico com um único parâmetro",
+                    "Visualizar gráfico com dois parâmetros",
+                ])
+
+                internal_input = int(input())
+                
+                match internal_input:
+                    case 0: # Sair
+                        continue
+
+                    case 1: # Visualizar gráfico com um único parâmetro
+                        receita_state, colunas_validas  = verifica_receita(subdf.columns.values, receita)
+                        if receita_state == True:
+                            subdf_baked = subdf.copy()
+                            if(updated_receita):
+                                executa_receita(receita, subdf_baked)
+                                updated_receita = False
+                            one_value_plot(subdf_baked)
+                        else:
+                            print("Erro com o passo "+str(receita_state))
+                        continue
+
+                    case 2: # Visualizar gráfico com dois parâmetros
+                        receita_state, colunas_validas  = verifica_receita(subdf.columns.values, receita)
+                        if receita_state == True:
+                            subdf_baked = subdf.copy()
+                            executa_receita(receita, subdf_baked)
+                            two_values_plot(subdf_baked)
+                        else:
+                            print("Erro com o passo "+str(receita_state))
+                        continue
+
 
 
 
